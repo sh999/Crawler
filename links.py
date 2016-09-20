@@ -1,10 +1,30 @@
 import re
+from bs4 import BeautifulSoup
 
-class Links_col:
+class Links_Col:
 	def __init__(self):
 		# print "Initialize Links object"
 		self.list_of_links = []
 		self.total = 0
+	def __init__(self, site):
+		site_soup = BeautifulSoup(site)			# Convert to tree of tags soup object
+		tag_a_elements = site_soup.find_all("a")		# Get all tags <a> from tag tree
+		self.list_of_links = []
+		self.total = 0
+		for i in tag_a_elements:
+				# print "---"
+				# print i.get("href")				# Get only <a> with href
+				try:
+					# print i.get("href")[0:7]
+					if(i.get("href")[0:7] == "http://" or i.get("href")[0:7] == "https://"):	# Keep hrefs that start w/ http; some don't have valid urls
+						# print "valid URL"
+						self.insert(i.get("href"))
+					else:
+						# print "invalid URL"
+						pass					# Don't keep urls with no "href"
+				except TypeError:
+					# print "TypeError detected"
+					pass
 
 	def insert(self, link_str):
 		'''
@@ -25,6 +45,7 @@ class Links_col:
 			Filter for links that are in domain
 		'''
 		# regex = r"(.*uky.edu.*)"
+		print "Filtering domain..."
 		regex = r"(.*"+domain+".*)"
 
 		self.filtered_list = []

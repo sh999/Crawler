@@ -21,13 +21,13 @@ def souptest():
 		print "?"
 		print i
 def re_test():
-	link1 = 'www.uky.edu'
+	link1 = 'http://www.uky.edu'
 	str1 = 'http://uknow.uky.edu/content/10-things-uk-students-love-about-lexington'
 	uky_domain_regex = r"(.*uky.edu.*)"
 	# domains_in_uk_regex = r"https?:\/\/(.*)\..*\.uky\.edu.*"
 	domains_in_uk_regex = r"https?:\/\/(.*)\..*uky\.edu.*"
 	match = re.search(domains_in_uk_regex, str1)	
-	print "regex:", domains_in_uk_regex
+	print "regex:", uky_domain_regex
 	if match != None:
 		print match.group(0)
 		print match.group(1)
@@ -102,5 +102,5 @@ def http_header():
 
 def robots_parse():
 	robots = RobotsCache()
-	print robots.allowed("http://www.weather.com/search/dd/32", "my-agent")
-http_header()
+	print robots.allowed("http://www.uky.edu/hr/employment", "my-agent")
+robots_parse()

@@ -103,4 +103,20 @@ def http_header():
 def robots_parse():
 	robots = RobotsCache()
 	print robots.allowed("http://www.uky.edu/hr/employment", "my-agent")
-robots_parse()
+def domain_test2():
+	link1 = 'http://www.uky.edu'
+	str1 = 'http://ukn/ow.uky.edu/content/10-things-uk-students-love-about-lexington'
+	# uky_domain_regex = r"(.*uky.edu.*)"
+	# domains_in_uk_regex = r"https?:\/\/(.*)\..*\.uky\.edu.*"
+	# domains_in_uk_regex = r"https?:\/\/(.*)\..*uky\.edu.*"
+	domains_in_uk_regex = r"(https?:\/\/).*(\/).*(uky\.edu)"
+	match = re.search(domains_in_uk_regex, str1)	
+	print "regex:", domains_in_uk_regex
+	if match != None:
+		print "Don't want this"
+		print match.group(0)
+		print match.group(1)
+		print match.group(2)
+	else:
+		print "Want this"
+domain_test2()

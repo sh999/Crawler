@@ -47,6 +47,7 @@ class Links_Col:
 		# regex = r"(.*uky.edu.*)"
 		print "Filtering domain..."
 		regex = r"(.*"+domain+".*)"
+		# regex2 = r"(https?:\/\/).*(\/).*(uky\.edu)"
 
 		self.filtered_list = []
 		counter = 0
@@ -57,6 +58,7 @@ class Links_Col:
 				if match != None:
 					self.filtered_list.append(match.group(0))
 					counter += 1
+
 			except AttributeError:
 				pass
 		self.list_of_links = self.filtered_list

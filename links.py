@@ -7,7 +7,6 @@ class Links_Col:
 		self.list_of_links = []
 		self.total = 0
 		self.unique_filetypes = {}
-		self.unique_filetypes["text/html"] = 0
 
 	def add_links(self, site):
 		site_soup = BeautifulSoup(site)			# Convert to tree of tags soup object
@@ -27,10 +26,7 @@ class Links_Col:
 				except TypeError:
 					# print "TypeError detected"
 					pass
-	def print_types(self):
-		print "\tFiletypes:"
-		for filetype in self.unique_filetypes:
-			print "\t\t", filetype, ":", self.unique_filetypes[filetype]
+	
 	def insert(self, link_str):
 		'''
 			Insert a link to the list of links
@@ -45,6 +41,28 @@ class Links_Col:
 		'''
 		return self.list_of_links
 
+	def get_subdomain(self, link_str, domain):
+		'''
+			Get subdomain from url
+		'''
+		print "in get_subdomain"
+		print "domain:", domain
+		print "link:", link_str
+		regex = r"(http:\/\/)?(([^.]+)\.)?uky\.edu"
+		match = re.search(regex, link_str)
+		try:
+			if match != None:
+				print "match group0:", match.group(0)
+				print "match group1:", match.group(1)
+				print "match group2:", match.group(2)
+				print "match group3:", match.group(3)
+				return "DUDE"
+				# return match.group(1)
+			else:
+				return "Nomatch"
+		except AttributeError:
+			return "re_error"
+		return "WHAT"
 	def filter_for_domain(self, domain):
 		'''
 			Filter for links that are in domain

@@ -5,17 +5,16 @@
 # 
 from bs4 import BeautifulSoup
 import urllib2
-# import cookielib
 import socket
-# from cookielib import Cookie
 import links
 import reppy
 from reppy.cache import RobotsCache
 import traceback
 import re
 import time
+import random
 
-def may_delay(crawler_delay):
+def delay_crawler(crawler_delay, just_skip):
 	# Set crawler speed to rawler_delay
 	if crawler_delay != None or crawler_delay > 2.0:   	# Don't bother with domain if there is requirement to slow down
 		# print "Ignoring domain due to delay limit"
@@ -25,7 +24,7 @@ def may_delay(crawler_delay):
 			time.sleep(crawler_delay)
 		print "Done delay"
 
-def delay_skip(crawler_delay):
+def ignore_from_setdelay(crawler_delay):
 	# Don't bother requesting if domain sets crawler_delay
 	if crawler_delay != None or crawler_delay > 2.0:
 		return True
@@ -33,23 +32,23 @@ def delay_skip(crawler_delay):
 		return False
 
 def get_links(robots, url, url_frontier, outfile, domains_out, domain, limit_domain):	
-
-		
 	try:
 		print "URL:", url
 		print "Checking robots..."
 		crawler_delay = robots.delay(url, 'my-agent')
-		# may_delay(crawler_delay)
-		if delay_skip(crawler_delay):
-			print "Skipping due to crawl_delay"
-			return url_frontier
-		if crawler_delay != None or crawler_delay > 2.0:   	# Don't bother with domain if there is requirement to slow down
-			# print "Ignoring domain due to delay limit"
-			# return url_frontier
-			if crawler_delay <= 10.0:
-				print "Delaying crawler..."
+		# delay_crawler(crawler_delay)
+		# if ignore_from_setdelay(crawler_delay):
+		# 	print "Skipping due to crawl_delay"
+		# 	return url_frontier
+		if crawler_delay != None and crawler_delay > 2.0:
+			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
+			r = random.uniform(0,10)
+			if r > 2:	# Skip 80% of the time here
+				print "Skipping due to delay"
+				return url_frontier
+			else:
+				print "Complying with delay"
 				time.sleep(crawler_delay)
-			print "Done delay"
 		if (robots.allowed(url, "*")):	# Allowed by robots
 			print "Allowed to visit"
 			if len(url_frontier) < 50:  # Ensure first site gets read
@@ -127,9 +126,8 @@ def main():
 	print "Starting crawler..."
 	visits_limit = 50
 	visit_num = 1
-	my_domain = "stanford.edu"
-	# start_url = "http://www."+my_domain
-	start_url = "http://cs.uky.edu/"
+	my_domain = "uky.edu"
+	start_url = "http://www."+my_domain
 	url_frontier = [start_url]
 	# url_frontier = get_links(start_url, url_frontier, outfile, domains_out, domain="umich.edu", limit_domain=True)
 	robots = RobotsCache()

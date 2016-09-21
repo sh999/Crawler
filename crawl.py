@@ -13,7 +13,24 @@ import reppy
 from reppy.cache import RobotsCache
 import traceback
 import re
+import time
 
+def may_delay(crawler_delay):
+	# Set crawler speed to rawler_delay
+	if crawler_delay != None or crawler_delay > 2.0:   	# Don't bother with domain if there is requirement to slow down
+		# print "Ignoring domain due to delay limit"
+		# return url_frontier
+		if crawler_delay <= 10.0:
+			print "Delaying crawler..."
+			time.sleep(crawler_delay)
+		print "Done delay"
+
+def delay_skip(crawler_delay):
+	# Don't bother requesting if domain sets crawler_delay
+	if crawler_delay != None or crawler_delay > 2.0:
+		return True
+	else:
+		return False
 
 def get_links(robots, url, url_frontier, outfile, domains_out, domain, limit_domain):	
 
@@ -21,11 +38,23 @@ def get_links(robots, url, url_frontier, outfile, domains_out, domain, limit_dom
 	try:
 		print "URL:", url
 		print "Checking robots..."
+		crawler_delay = robots.delay(url, 'my-agent')
+		# may_delay(crawler_delay)
+		if delay_skip(crawler_delay):
+			print "Skipping due to crawl_delay"
+			return url_frontier
+		if crawler_delay != None or crawler_delay > 2.0:   	# Don't bother with domain if there is requirement to slow down
+			# print "Ignoring domain due to delay limit"
+			# return url_frontier
+			if crawler_delay <= 10.0:
+				print "Delaying crawler..."
+				time.sleep(crawler_delay)
+			print "Done delay"
 		if (robots.allowed(url, "*")):	# Allowed by robots
 			print "Allowed to visit"
-			if len(url_frontier) < 50:
+			if len(url_frontier) < 50:  # Ensure first site gets read
 				t = 20
-			else:
+			else:   # Other sites limit
 				t = 2
 			# site = urllib2.urlopen(url, timeout=t)
 			print "Requesting header"
@@ -44,7 +73,7 @@ def get_links(robots, url, url_frontier, outfile, domains_out, domain, limit_dom
 				else:	# filetype not html, so skip
 					print "\tUnwanted type; not opening"
 					return url_frontier
-			else:	# regex didn't get filetype (should be impossible)
+			else:	# regex didn't get filetype (should not happen)
 				print "No match"
 				return url_frontier
 		else:	# Disallowed by robots
@@ -98,11 +127,13 @@ def main():
 	print "Starting crawler..."
 	visits_limit = 50
 	visit_num = 1
-	my_domain = "uky.edu"
-	start_url = "http://www."+my_domain
+	my_domain = "stanford.edu"
+	# start_url = "http://www."+my_domain
+	start_url = "http://cs.uky.edu/"
 	url_frontier = [start_url]
 	# url_frontier = get_links(start_url, url_frontier, outfile, domains_out, domain="umich.edu", limit_domain=True)
 	robots = RobotsCache()
+
 	for url in url_frontier:
 		print "\nVisit #:",visit_num
 		url_frontier = get_links(robots, url, url_frontier, outfile, domains_out, domain=my_domain, limit_domain=True)

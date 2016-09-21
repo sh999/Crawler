@@ -31,21 +31,21 @@ def ignore_from_setdelay(crawler_delay):
 	else:
 		return False
 
-def get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, filetypes_out, domain, limit_domain):	
+def get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, summary_out, domain, limit_domain):	
 	try:
 		# url_frontier = url_frontier.get_list()
 		print "URL:", url
 		modified_frontier = links.Links_Col()
-		subdomain = modified_frontier.get_subdomain(url, domain)
+		subdomain = url_frontier.get_subdomain(url, domain)
 		print "\tSubdomain:", subdomain 							# Get subdomain by parsing url
-		if subdomain in modified_frontier.subdomains:
+		if subdomain in url_frontier.slow_subdomains:
 			print "Skipping URL because domain's limit on time"
 			return url_frontier
 		print "Checking robots.txt..."
 		crawler_delay = robots.delay(url, 'my-agent')				# Get craw-delay if it exists in robots.txt
 		
 		if crawler_delay != None and crawler_delay > 2.0:			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
-			# modified_frontier.subdomains.add(subdomain)
+			url_frontier.slow_subdomains.add(subdomain)
 			# return url_frontier
 			r = random.uniform(0,10)
 			if r > 9:	# Skip 10% of the time here
@@ -129,7 +129,7 @@ def print_types(outfile, filetypes):
 			outfile.write(filetype+ ":"+ str(filetypes[filetype])+"\n")
 def main():
 	frontier_out = open("out", "w")
-	filetypes_out = open("filetypes_out", "w")
+	summary_out = open("summary_out", "w")
 	print "Starting crawler..."
 	visits_limit = 50
 	visit_num = 0
@@ -146,15 +146,15 @@ def main():
 	while True:
 		print "-------------------------------------"
 		print "\nVisit #:",visit_num
-		url_frontier = get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, filetypes_out, domain=my_domain, limit_domain=True)
+		url_frontier = get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, summary_out, domain=my_domain, limit_domain=True)
 		url = url_frontier.get_list()[visit_num]
-		filetypes_out.close()
-		filetypes_out = open("filetypes_out", "w")
-		print_types(filetypes_out, filetypes)
+		summary_out.close()
+		summary_out = open("summary_out", "w")
+		print_types(summary_out, filetypes)
 		visit_num += 1
 		print "-------------------------------------"
 
 	frontier_out.close()
-	filetypes_out.close()
+	summary_out.close()
 
 main()

@@ -37,6 +37,7 @@ def get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, su
 		print "URL:", url
 		modified_frontier = links.Links_Col()
 		subdomain = url_frontier.get_subdomain(url, domain)
+		url_frontier.insert_unique_subdomain(subdomain)
 		print "\tSubdomain:", subdomain 							# Get subdomain by parsing url
 		if subdomain in url_frontier.slow_subdomains:
 			print "Skipping URL because domain's limit on time"
@@ -123,10 +124,14 @@ def get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, su
 	    print 'generic exception: ', traceback.format_exc()
 	    print 'Other exception'
 	    return url_frontier
-def print_types(outfile, filetypes):
-		print "\tFiletypes:"
+
+def print_dashboard(outfile, filetypes, subdomains):
+		outfile.write("\tFiletypes:")
 		for filetype in filetypes:
 			outfile.write(filetype+ ":"+ str(filetypes[filetype])+"\n")
+		outfile.write("\tSubdomains:")
+		for subdomain in subdomains:
+			outfile.write("\n"+subdomain)
 def main():
 	frontier_out = open("out", "w")
 	summary_out = open("summary_out", "w")
@@ -148,9 +153,9 @@ def main():
 		print "\nVisit #:",visit_num
 		url_frontier = get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, summary_out, domain=my_domain, limit_domain=True)
 		url = url_frontier.get_list()[visit_num]
-		summary_out.close()
-		summary_out = open("summary_out", "w")
-		print_types(summary_out, filetypes)
+		# summary_out.close()
+		# summary_out = open("summary_out", "w")
+		print_dashboard(summary_out, filetypes, url_frontier.subdomains)
 		visit_num += 1
 		print "-------------------------------------"
 

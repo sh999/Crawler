@@ -38,7 +38,9 @@ class Links_Col:
 		if link_str not in self.list_of_links and link_str+"/" not in self.list_of_links:
 			self.list_of_links.append(link_str)
 			self.total += 1
-
+	def insert_unique_subdomain(self, subdomain):
+		if subdomain not in self.subdomains:
+			self.subdomains.add(subdomain)
 	def get_list(self):
 		'''
 			Return the list of links
@@ -52,7 +54,8 @@ class Links_Col:
 		# print "in get_subdomain"
 		# print "domain:", domain
 		# print "link:", link_str
-		regex = r"http:\/\/?([^.]+)\.?uky\.edu"
+		# regex = r"http:\/\/?([^.]+)\.?uky\.edu"
+		regex = r"http:\/\/?(.*)\.uky\.edu"
 		match = re.search(regex, link_str)
 		try:
 			if match != None:

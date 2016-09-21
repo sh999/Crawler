@@ -15,8 +15,8 @@ import time
 import random
 
 def delay_crawler(crawler_delay, just_skip):
-	# Set crawler speed to rawler_delay
-	if crawler_delay != None or crawler_delay > 2.0:   	# Don't bother with domain if there is requirement to slow down
+	# Set crawler speed to crawler_delay specified on robots.txt
+	if crawler_delay != None or crawler_delay > 2.0:   				# Don't bother with domain if there is requirement to slow down
 		# print "Ignoring domain due to delay limit"
 		# return url_frontier
 		if crawler_delay <= 10.0:
@@ -31,66 +31,71 @@ def ignore_from_setdelay(crawler_delay):
 	else:
 		return False
 
-def get_links(robots, url, url_frontier, subdomains, outfile, filetypes, filetypes_out, domain, limit_domain):	
+def get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, filetypes_out, domain, limit_domain):	
 	try:
 		print "URL:", url
 		possible_links = links.Links_Col()
-		print "Subdomain:", possible_links.get_subdomain(url, domain)
-		print "Checking robots..."
-		crawler_delay = robots.delay(url, 'my-agent')		# Get craw-delay if it exists
-		if crawler_delay != None and crawler_delay > 5.0:
-			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
+		print "\tSubdomain:", possible_links.get_subdomain(url, domain)
+		print "Checking robots.txt..."
+		crawler_delay = robots.delay(url, 'my-agent')				# Get craw-delay if it exists in robots.txt
+		if crawler_delay != None and crawler_delay > 5.0:			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
 			r = random.uniform(0,10)
-			if r > 9:	# Skip 80% of the time here
+			if r > 9:	# Skip 10% of the time here
 				print "Skipping due to delay"
 				return url_frontier
 			else:
-				print "Slowing crawl"
+				print "Slowing crawl"				
 				time.sleep(crawler_delay)
-		
+		if (robots.allowed(url, "*")):								# Check if robots.txt lets us request page
+			'''
+				If url is allowed by robots, txt:
+					Request url, get content_type (filetype), 
+					 parse HTML for links, put links on frontier
+			'''
 
-		if (robots.allowed(url, "*")):	# Allowed by robots. Check filetype and may fetch data
-			print "Allowed to visit"
-			if len(url_frontier) < 50:  # Ensure first site gets read
+			print "\tAllowed to visit"
+			if len(url_frontier) < 50:  							# Ensure first site gets read
 				t = 20
-			else:   # Other sites limit
+			else:   												# Force to go faster afterwards
 				t = 5
-			print "Requesting header"
+			print "Requesting header...",				# Request header/content
 			request = urllib2.Request(url)
-			site = urllib2.urlopen(request, timeout=t)		# Open site
+			site = urllib2.urlopen(request, timeout=t)				# Open site
 			content_type = site.info().getheader('Content-Type')	# Get header to get filetype
+			print "finished"
 			content_type_regex = r"(text/html)"
-			print "Content_type from header:", content_type
-			match = re.search(content_type_regex, content_type)
-			if match != None:		# filetype is what we want, text/html
-				print "\tmatch:", match.group(1)
+			print "\tContent_type:",
+			match = re.search(content_type_regex, content_type)		# Do regex to check if file is text/html
+			if match != None:		
+				# print "\tmatch:", match.group(1)
 				if match.group(1) == 'text/html':
-					print "\Detected text/html type"
-					filetypes["text/html"] += 1
+					print "text/html"
+					filetypes["text/html"] += 1						# Increment text/html count
 			else:	# Got a non text/html type
-				print "Found type", content_type
-				if content_type not in filetypes:  # First time type seen
+				print content_type 									# Increment non text/html count
+				if content_type not in filetypes:  					# If first time seeing a filetype, store the info in unique list of filetypes
 					filetypes[content_type] = 0
 				else:   # Increment count to file already seen
 					filetypes[content_type] += 1
-				return url_frontier
+				return url_frontier									# Don't continue parsing if not text/html
 		else:	# Disallowed by robots
 			print "Not allowed to visit; skipping"
-			return url_frontier			# Don't modify url table; exit function
+			return url_frontier										# Escape if robots.txt doesn't allow this site
 		print "Opening URL"
 		print "Parsing links..."
-		possible_links.add_links(site)    # Create possible_links initially with <a> elements (filtered later)
+		possible_links.add_links(site)    							# Create possible_links initially with <a> elements (filtered later)
 		print "Filtering links by domain..."
 		raw_valid_links_tot = possible_links.get_total()
 		if limit_domain:
 			possible_links.filter_for_domain(domain)
 		in_domain_urls_tot = len(possible_links.get_list())
-		print "\tLink items:", raw_valid_links_tot   # <a, href=> items
-		print "\tLinks in domain:", in_domain_urls_tot
+		print "\tFound:"
+		print "\t\tLink items:", raw_valid_links_tot   				# Want only <a, href=> 
+		print "\t\tLinks in domain:", in_domain_urls_tot
 		print "Putting unique links on frontier..."
-		for link in possible_links.get_list():		# With a list of links parsed, only put in those that aren't already on url frontier
+		for link in possible_links.get_list():						# With a list of links parsed, only put in those that aren't already on url frontier
 			if link not in url_frontier:
-				outfile.write(link+"\n")
+				frontier_out.write(link+"\n")
 				url_frontier.append(link)
 		return url_frontier
 	except socket.timeout , e:
@@ -114,7 +119,7 @@ def print_types(outfile, filetypes):
 		for filetype in filetypes:
 			outfile.write(filetype+ ":"+ str(filetypes[filetype])+"\n")
 def main():
-	outfile = open("out", "w")
+	frontier_out = open("out", "w")
 	filetypes_out = open("filetypes_out", "w")
 	print "Starting crawler..."
 	visits_limit = 50
@@ -128,13 +133,16 @@ def main():
 	filetypes = {"text/html":0}
 
 	for url in url_frontier:
+		print "-------------------------------------"
 		print "\nVisit #:",visit_num
-		url_frontier = get_links(robots, url, url_frontier, subdomains, outfile, filetypes, filetypes_out, domain=my_domain, limit_domain=True)
+		url_frontier = get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, filetypes_out, domain=my_domain, limit_domain=True)
 		filetypes_out.close()
 		filetypes_out = open("filetypes_out", "w")
 		print_types(filetypes_out, filetypes)
 		visit_num += 1
-	outfile.close()
+		print "-------------------------------------"
+
+	frontier_out.close()
 	filetypes_out.close()
 
 main()

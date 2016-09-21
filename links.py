@@ -9,9 +9,11 @@ class Links_Col:
 		self.unique_filetypes = {}
 
 	def add_links(self, site):
-		site_soup = BeautifulSoup(site)			# Convert to tree of tags soup object
+		'''
+			Parse html to get <a href>'s
+		'''
+		site_soup = BeautifulSoup(site, "html.parser")			# Convert to tree of tags soup object
 		tag_a_elements = site_soup.find_all("a")		# Get all tags <a> from tag tree
-		
 		for i in tag_a_elements:
 				# print "---"
 				# print i.get("href")				# Get only <a> with href
@@ -43,32 +45,27 @@ class Links_Col:
 
 	def get_subdomain(self, link_str, domain):
 		'''
-			Get subdomain from url
+			Get subdomain from url with regex
 		'''
-		print "in get_subdomain"
-		print "domain:", domain
-		print "link:", link_str
-		regex = r"(http:\/\/)?(([^.]+)\.)?uky\.edu"
+		# print "in get_subdomain"
+		# print "domain:", domain
+		# print "link:", link_str
+		regex = r"http:\/\/?([^.]+)\.?uky\.edu"
 		match = re.search(regex, link_str)
 		try:
 			if match != None:
-				print "match group0:", match.group(0)
-				print "match group1:", match.group(1)
-				print "match group2:", match.group(2)
-				print "match group3:", match.group(3)
-				return "DUDE"
-				# return match.group(1)
-			else:
-				return "Nomatch"
+				# print "match group0:", match.group(0)
+				# print "match group1:", match.group(1)
+				return match.group(1)
 		except AttributeError:
-			return "re_error"
-		return "WHAT"
+			return "regex error"
+
 	def filter_for_domain(self, domain):
 		'''
 			Filter for links that are in domain
 		'''
 		# regex = r"(.*uky.edu.*)"
-		print "Filtering domain..."
+		# print "Filtering domain..."
 		regex = r"(.*"+domain+".*)"
 		# regex2 = r"(https?:\/\/).*(\/).*(uky\.edu)"
 

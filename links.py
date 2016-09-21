@@ -6,11 +6,13 @@ class Links_Col:
 		# print "Initialize Links object"
 		self.list_of_links = []
 		self.total = 0
-	def __init__(self, site):
+		self.unique_filetypes = {}
+		self.unique_filetypes["text/html"] = 0
+
+	def add_links(self, site):
 		site_soup = BeautifulSoup(site)			# Convert to tree of tags soup object
 		tag_a_elements = site_soup.find_all("a")		# Get all tags <a> from tag tree
-		self.list_of_links = []
-		self.total = 0
+		
 		for i in tag_a_elements:
 				# print "---"
 				# print i.get("href")				# Get only <a> with href
@@ -25,7 +27,10 @@ class Links_Col:
 				except TypeError:
 					# print "TypeError detected"
 					pass
-
+	def print_types(self):
+		print "\tFiletypes:"
+		for filetype in self.unique_filetypes:
+			print "\t\t", filetype, ":", self.unique_filetypes[filetype]
 	def insert(self, link_str):
 		'''
 			Insert a link to the list of links

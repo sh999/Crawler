@@ -36,10 +36,11 @@ def get_links(robots, url, url_frontier, subdomains, outfile, domains_out, domai
 		print "URL:", url
 		print "Checking robots..."
 		crawler_delay = robots.delay(url, 'my-agent')		# Get craw-delay if it exists
+		possible_links = links.Links_Col()
 		if crawler_delay != None and crawler_delay > 5.0:
 			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
 			r = random.uniform(0,10)
-			if r > 2:	# Skip 80% of the time here
+			if r > 9:	# Skip 80% of the time here
 				print "Skipping due to delay"
 				return url_frontier
 			else:
@@ -62,22 +63,19 @@ def get_links(robots, url, url_frontier, subdomains, outfile, domains_out, domai
 				print "\tmatch:", match.group(1)
 				if match.group(1) == 'text/html':
 					print "\Detected text/html type"
-					# site_soup = BeautifulSoup(site)			# Convert to tree of tags soup object
-					# tag_a_elements = site_soup.find_all("a")		# Get all tags <a> from tag tree
-				elif match.group(1) != 'text/html':
-					print "\tDetected type:", match.group(1)
-					subdomains.add(match.group(1))
-					domains_out.write(match.group(1))
-					return url_frontier
-				else:	# filetype not html, so skip
-					print "\No type detected; not opening"
-					return url_frontier
-			else:	# regex didn't get filetype (should not happen)
-				print "No match"
+					possible_links.unique_filetypes["text/html"] += 1
+			else:	# Got a non text/html type
+				print "Found type", content_type
+				if content_type not in possible_links.unique_filetypes:  # First time type seen
+					possible_links.unique_filetypes[content_type] = 0
+					domains_out.write(content_type)
+				else:   # Increment count to file already seen
+					possible_links.unique_filetypes[content_type] += 1
 				return url_frontier
 		else:	# Disallowed by robots
 			print "Not allowed to visit; skipping"
 			return url_frontier			# Don't modify url table; exit function
+		possible_links.print_types()
 		print "Opening URL"
 		# print "t:", t
 		# site = urllib2.urlopen(url, timeout=t)
@@ -89,7 +87,7 @@ def get_links(robots, url, url_frontier, subdomains, outfile, domains_out, domai
 		# 	t = 2
 		# site = urllib2.urlopen(url, timeout=t)		# Connect to site
 		print "Parsing links..."
-		possible_links = links.Links_Col(site)    # Create possible_links initially with <a> elements (filtered later)
+		possible_links.add_links(site)    # Create possible_links initially with <a> elements (filtered later)
 		print "Filtering links by domain..."
 		raw_valid_links_tot = possible_links.get_total()
 		if limit_domain:
@@ -128,7 +126,7 @@ def main():
 	visit_num = 1
 	my_domain = "uky.edu"
 	start_url = "http://www."+my_domain
-	start_url = "http://www.msc.uky.edu"
+	start_url = "http://www.uky.edu"
 	url_frontier = [start_url]
 	subdomains = set()
 	# url_frontier = get_links(start_url, url_frontier, outfile, domains_out, domain="umich.edu", limit_domain=True)

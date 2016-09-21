@@ -33,19 +33,28 @@ def ignore_from_setdelay(crawler_delay):
 
 def get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, filetypes_out, domain, limit_domain):	
 	try:
+
 		print "URL:", url
 		possible_links = links.Links_Col()
-		print "\tSubdomain:", possible_links.get_subdomain(url, domain)
+		subdomain = possible_links.get_subdomain(url, domain)
+		print "\tSubdomain:", subdomain 							# Get subdomain by parsing url
+		if subdomain in possible_links.subdomains:
+			print "Skipping URL because domain's limit on time"
+			return url_frontier
 		print "Checking robots.txt..."
 		crawler_delay = robots.delay(url, 'my-agent')				# Get craw-delay if it exists in robots.txt
-		if crawler_delay != None and crawler_delay > 5.0:			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
-			r = random.uniform(0,10)
-			if r > 9:	# Skip 10% of the time here
-				print "Skipping due to delay"
-				return url_frontier
-			else:
-				print "Slowing crawl"				
-				time.sleep(crawler_delay)
+		
+		if crawler_delay != None and crawler_delay > 2.0:			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
+			possible_links.subdomains.add(subdomain)
+			return url_frontier
+			# r = random.uniform(0,10)
+			# if r > 9:	# Skip 10% of the time here
+			# 	print "Skipping due to delay"
+			# 	return url_frontier
+			# else:
+			# 	print "Slowing crawl"				
+			# 	time.sleep(crawler_delay)
+		
 		if (robots.allowed(url, "*")):								# Check if robots.txt lets us request page
 			'''
 				If url is allowed by robots, txt:
@@ -58,7 +67,7 @@ def get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, fi
 				t = 20
 			else:   												# Force to go faster afterwards
 				t = 5
-			print "Requesting header...",				# Request header/content
+			print "Requesting header...",							# Request header/content
 			request = urllib2.Request(url)
 			site = urllib2.urlopen(request, timeout=t)				# Open site
 			content_type = site.info().getheader('Content-Type')	# Get header to get filetype
@@ -136,6 +145,7 @@ def main():
 		print "-------------------------------------"
 		print "\nVisit #:",visit_num
 		url_frontier = get_links(robots, url, url_frontier, subdomains, frontier_out, filetypes, filetypes_out, domain=my_domain, limit_domain=True)
+		subdomains = url_frontier.subdomains
 		filetypes_out.close()
 		filetypes_out = open("filetypes_out", "w")
 		print_types(filetypes_out, filetypes)

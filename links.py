@@ -7,6 +7,7 @@ class Links_Col:
 		self.list_of_links = []
 		self.total = 0
 		self.unique_filetypes = {}
+		self.subdomains = set()
 
 	def add_links(self, site):
 		'''

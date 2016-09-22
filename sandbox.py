@@ -11,6 +11,8 @@ import reppy
 from reppy.cache import RobotsCache
 import time
 import timeout_decorator
+import robotexclusionrulesparser
+
 def souptest():
 	url = "http://www.drudgereport.com"
 	site = urllib2.urlopen(url, timeout=5)
@@ -129,12 +131,25 @@ def dict_count():
 
 
 
-@timeout_decorator.timeout(5)
-def timeout_test():
-    print "Start"
-    for i in range(1,10):
-        time.sleep(1)
-        print "%d seconds have passed" % i
-
-
-timeout_test()
+def robots_test():
+	rerp = robotexclusionrulesparser.RobotExclusionRulesParser()
+	# I'll set the (optional) user_agent before calling fetch.
+	rerp.user_agent = "schoolbot"
+	# Note that there should be a try/except here to handle urllib2.URLError,
+	# socket.timeout, UnicodeError, etc.
+	# regex = r"(https?:\/\/.*?\/)"
+	regex = r"(https?:\/\/.*?(?:/|$))"
+	url = "http://cs.fhdfuky.edu"
+	match = re.search(regex, url)
+	topdomain_url = ""
+	if match != None:
+		topdomain_url = match.group(1)
+	print "topdomain_url:", topdomain_url
+	# try:
+	rerp.fetch(topdomain_url+"/robots.txt",timeout=4)
+	print "type:", rerp.fetch(topdomain_url+"/robots.txt",timeout=4)
+	print rerp.is_allowed(rerp.user_agent, url)
+	print rerp.get_crawl_delay(rerp.user_agent)
+	# except Exception:
+ # 		print "huh"
+robots_test()

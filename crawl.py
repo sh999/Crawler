@@ -13,6 +13,16 @@ import traceback
 import re
 import time
 import random
+import robotexclusionrulesparser
+
+def get_robots_url(url):
+	regex = r"(https?:\/\/.*?(?:/|$))"
+	match = re.search(regex, url)
+	topdomain_url = ""
+	if match != None:
+		topdomain_url = match.group(1)
+	print "topdomain_url:", topdomain_url
+	return topdomain_url+"/robots.txt"
 
 def crawl(url_frontier, robots, url, subdomains, frontier_out, summary_out, domain, limit_domain, skip):	
 	try:
@@ -26,7 +36,11 @@ def crawl(url_frontier, robots, url, subdomains, frontier_out, summary_out, doma
 			print "Skipping URL because domain's limit on time"
 			return url_frontier
 		print "Checking robots.txt..."
-		crawler_delay = robots.delay(url, 'my-agent')				# Get craw-delay if it exists in robots.txt
+		
+		robots_url = get_robots_url(url)
+		robots.fetch(robots_url, timeout=4)
+		crawler_delay = robots.get_crawl_delay(robots.user_agent)
+		# crawler_delay = robots.delay(url, 'my-agent')				# Get craw-delay if it exists in robots.txt
 		print "\trobots.txt crawler_delay:", crawler_delay
 		if crawler_delay > 0:			# If there is delay limit, either skip site or wait for the time specified (choose randomly)
 			print "\tAdding subdomain to slow_subdomains"
@@ -40,7 +54,8 @@ def crawl(url_frontier, robots, url, subdomains, frontier_out, summary_out, doma
 				print "\tSlowing crawl"				
 				time.sleep(crawler_delay)
 		
-		if (robots.allowed(url, "*")):								# Check if robots.txt lets us request page
+		if robots.is_allowed(robots.user_agent, url):
+		# if (robots.is_allowed(url, "*")):								# Check if robots.txt lets us request page
 			'''
 				If url is allowed by robots, txt:
 					Request url, get content_type (filetype), 
@@ -133,11 +148,12 @@ def main():
 	start_url = "http://www."+my_domain
 	start_url = "http://www.uky.edu"
 	url = start_url
-	# url_frontier = [start_url]
 	url_frontier = links.Url_Frontier()
 	subdomains = set()
-	robots = RobotsCache()
-	# filetypes = {"text/html":0}
+	robots = robotexclusionrulesparser.RobotExclusionRulesParser()
+	robots.user_agent = "schoolbot"
+
+	# robots = RobotsCache()
 
 	while True:
 		print "-------------------------------------"

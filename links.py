@@ -10,6 +10,11 @@ class Url_Frontier:
 		self.subdomains = set()
 		self.slow_subdomains = set()
 
+		self.finish_parsed = 0
+		self.request_error = 0
+		self.skipped = 0
+		self.filetypes_percent;
+
 	def add_links(self, site):
 		'''
 			Parse html to get <a href>'s

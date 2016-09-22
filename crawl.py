@@ -34,6 +34,7 @@ def crawl(url_frontier, robots, url, subdomains, frontier_out, summary_out, doma
 		print "\tSubdomain:", subdomain 							# Get subdomain by parsing url
 		if subdomain in url_frontier.slow_subdomains and skip == True:    # If wanted, skip domains that have high crawl-delay
 			print "Skipping URL because domain's limit on time"
+			url_frontier.skipped += 1
 			return url_frontier
 		print "Checking robots.txt..."
 		
@@ -88,9 +89,11 @@ def crawl(url_frontier, robots, url, subdomains, frontier_out, summary_out, doma
 				else:   # Increment count to file already seen
 					print "Incrementing other filetype count"
 					url_frontier.filetypes[content_type] += 1
+				url_frontier.skipped += 1
 				return url_frontier									# Don't continue parsing if not text/html
 		else:	# Disallowed by robots
 			print "Not allowed to visit; skipping"
+			url_frontier.skipped += 1
 			return url_frontier										# Escape if robots.txt doesn't allow this site
 		print "Opening URL"
 		print "Parsing links..."
@@ -109,44 +112,78 @@ def crawl(url_frontier, robots, url, subdomains, frontier_out, summary_out, doma
 				frontier_out.write(link+"\n")
 				url_frontier.list_of_links.append(link)
 		print "Finished"
+		url_frontier.finish_parsed += 1
 		return url_frontier
 	except socket.timeout , e:
 	    print "Socket timeout"
+	    url_frontier.request_error += 1
 	    return url_frontier
-	# except urllib2.URLError , e:
-	# 	print "Urlerror"
-		# return url_frontier
 	except urllib2.HTTPError as e: # http://stackoverflow.com/questions/666022/what-errors-exceptions-do-i-need-to-handle-with-urllib2-request-urlopen
 	    print 'HTTPError = ', str(e.code)
+	    url_frontier.request_error += 1
 	    return url_frontier
 	except urllib2.URLError , e:
 	    print 'URLError = ', str(e.reason)
+	    url_frontier.request_error += 1
 	    return url_frontier
+	except KeyboardInterrupt:
+		print_summary_out(summary_out, url_frontier.filetypes, url_frontier.subdomains)
 	except Exception:
-	    print 'generic exception: ', traceback.format_exc()
-	    print 'Other exception'
+	    print 'Other exception: ', traceback.format_exc()
+	    url_frontier.request_error += 1
 	    return url_frontier
 
-def print_dashboard(outfile, filetypes, subdomains):
+def print_summary(url_frontier, visit_num):
+	print "# of links observed:", len(url_frontier.get_list())
+	print "# of attempted visits:", visit_num
+	print "# of successful crawl/parse:", url_frontier.finish_parsed
+	print "# of errors (timeouts, etc.):", url_frontier.request_error
+	print "# of skipped pages:", url_frontier.skipped
+
+def print_summary_out(outfile, url_frontier, visit_num):
+	outfile = open("summary_out", "w")
+	try:
 		outfile.write("Filetypes:\n")
-		try:
-			for filetype in filetypes:
-				outfile.write("\t"+filetype+ ":"+ str(filetypes[filetype])+"\n")
-			outfile.write("Subdomains:\n")
-			for subdomain in subdomains:
-				outfile.write("\t"+subdomain+"\n")
-		except TypeError:
-			pass
+		for filetype in url_frontier.filetypes:
+			outfile.write("\t"+filetype+ ":"+ str(url_frontier.filetypes[filetype])+"\n")
+		outfile.write("Subdomains:\n")
+		for subdomain in url_frontier.subdomains:
+			outfile.write("\t"+subdomain+"\n")
+		outfile.write("# of links observed: "+str(len(url_frontier.get_list())))
+		outfile.write("\n# of attempted visits: "+str(visit_num))
+		outfile.write("\n# of successful crawl/parse: "+str(url_frontier.finish_parsed))
+		outfile.write("\n# of errors (timeouts, etc.): "+str(url_frontier.request_error))
+		outfile.write("\n# of skipped pages: "+str(url_frontier.skipped))
+	except AttributeError:
+		pass
+	except TypeError:
+		pass
+
+def print_file_domains_out(filetypes_domains_out, url_frontier):
+	outfile = open("domains_out", "w")
+	try:
+		outfile.write("Filetypes:\n")
+		for filetype in url_frontier.filetypes:
+			outfile.write("\t"+filetype+ ":"+ str(url_frontier.filetypes[filetype])+"\n")
+		outfile.write("Subdomains:\n")
+		for subdomain in url_frontier.subdomains:
+			outfile.write("\t"+subdomain+"\n")
+	except TypeError:
+		pass
+
+
 def main():
 	# crawler = Crawler()
+	prog_start_time = time.clock()
 	frontier_out = open("out", "w")
 	summary_out = open("summary_out", "w")
+	filetypes_domains_out = open("domains_out", "w")
 	print "Starting crawler..."
 	visits_limit = 50
 	visit_num = 0
 	my_domain = "uky.edu"
 	start_url = "http://www."+my_domain
-	start_url = "http://www.uky.edu"
+	# start_url = "http://www.uky.edu"
 	url = start_url
 	url_frontier = links.Url_Frontier()
 	subdomains = set()
@@ -157,14 +194,23 @@ def main():
 
 	while True:
 		print "-------------------------------------"
+		loop_start_time = time.clock()
 		print "\nVisit #:",visit_num
 		# print "Len filetypes:", len(url_frontier.filetypes)
 		url_frontier = crawl(url_frontier, robots, url, subdomains, frontier_out, summary_out, domain=my_domain, limit_domain=True, skip=True)
 		url = url_frontier.get_list()[visit_num]
 		# summary_out.close()
-		# summary_out = open("summary_out", "w")
-		print_dashboard(summary_out, url_frontier.filetypes, url_frontier.subdomains)
+		if visit_num % 5 == 0:
+			print_summary_out(summary_out, url_frontier, visit_num)
+			print_file_domains_out(filetypes_domains_out, url_frontier)
+		print_summary(url_frontier, visit_num)
 		visit_num += 1
+		end_loop_time = time.clock()-loop_start_time
+		prog_elapsed = time.clock()-prog_start_time
+		# print "URL time:", time.strftime("%S", time.gmtime(end_loop_time)), " s."
+		print "Accumulated time:", time.strftime("%S", time.gmtime(prog_elapsed)), "sec"
+		print "URLs seen:", format(len(url_frontier.get_list())/prog_elapsed, '.2f'), "pg/sec"
+		print "Crawls:", format(url_frontier.finish_parsed/prog_elapsed, '.2f'), "pg/sec"
 		print "-------------------------------------"
 
 	frontier_out.close()

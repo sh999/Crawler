@@ -9,7 +9,8 @@ import links
 import re
 import reppy
 from reppy.cache import RobotsCache
-
+import time
+import timeout_decorator
 def souptest():
 	url = "http://www.drudgereport.com"
 	site = urllib2.urlopen(url, timeout=5)
@@ -119,4 +120,21 @@ def domain_test2():
 		print match.group(2)
 	else:
 		print "Want this"
-domain_test2()
+def dict_count():
+	a = {"a":4}
+	a["sdf"] = 3
+	for i in a:
+		print i
+	print len(a)
+
+
+
+@timeout_decorator.timeout(5)
+def timeout_test():
+    print "Start"
+    for i in range(1,10):
+        time.sleep(1)
+        print "%d seconds have passed" % i
+
+
+timeout_test()

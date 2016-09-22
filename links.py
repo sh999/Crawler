@@ -1,12 +1,12 @@
 import re
 from bs4 import BeautifulSoup
 
-class Links_Col:
+class Url_Frontier:
 	def __init__(self):
 		# print "Initialize Links object"
 		self.list_of_links = []
 		self.total = 0
-		self.unique_filetypes = {}
+		self.filetypes = {"text/html":1}
 		self.subdomains = set()
 		self.slow_subdomains = set()
 
@@ -39,7 +39,7 @@ class Links_Col:
 			self.list_of_links.append(link_str)
 			self.total += 1
 	def insert_unique_subdomain(self, subdomain):
-		if subdomain not in self.subdomains:
+		if subdomain not in self.subdomains and subdomain != None:
 			self.subdomains.add(subdomain)
 	def get_list(self):
 		'''
